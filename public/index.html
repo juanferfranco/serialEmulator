@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Serial Emulator Control</title>
+    <style>
+        body { font-family: Arial; max-width: 600px; margin: 20px auto; padding: 20px; }
+        .control { margin: 15px 0; }
+        label { display: inline-block; width: 100px; }
+        input[type="range"] { width: 300px; }
+        input[type="checkbox"] { transform: scale(1.5); margin-left: 10px; }
+        .values { background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>Control de Sensores en Tiempo Real</h1>
+    
+    <div class="values">
+        <h3>Valores Actuales:</h3>
+        <div id="current-values"></div>
+    </div>
+
+    <div class="control">
+        <label>XF:</label>
+        <input type="range" id="xf" min="-1200" max="1200" value="0">
+        <span id="xf-value">0</span>
+    </div>
+
+    <div class="control">
+        <label>YF:</label>
+        <input type="range" id="yf" min="-1200" max="1200" value="0">
+        <span id="yf-value">0</span>
+    </div>
+
+    <div class="control">
+        <label>A State:</label>
+        <input type="checkbox" id="aState" checked>
+    </div>
+
+    <div class="control">
+        <label>B State:</label>
+        <input type="checkbox" id="bState">
+    </div>
+
+    <script>
+        const updateValue = async () => {
+            const values = {
+                xf: document.getElementById('xf').value,
+                yf: document.getElementById('yf').value,
+                aState: document.getElementById('aState').checked,
+                bState: document.getElementById('bState').checked
+            };
+
+            await fetch('/api/values', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(values)
+            });
+        };
+
+        const updateDisplay = () => {
+            document.getElementById('xf-value').textContent = document.getElementById('xf').value;
+            document.getElementById('yf-value').textContent = document.getElementById('yf').value;
+        };
+
+        ['xf', 'yf'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                updateDisplay();
+                updateValue();
+            });
+        });
+
+        ['aState', 'bState'].forEach(id => {
+            document.getElementById(id).addEventListener('change', updateValue);
+        });
+
+        // Actualizar valores actuales cada segundo
+        setInterval(async () => {
+            const response = await fetch('/api/values');
+            const values = await response.json();
+            document.getElementById('current-values').innerHTML = 
+                `XF: ${values.xf}, YF: ${values.yf}, A: ${values.aState}, B: ${values.bState}`;
+        }, 1000);
+
+        updateDisplay();
+    </script>
+</body>
+</html>
